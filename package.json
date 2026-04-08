@@ -9,7 +9,8 @@
     "test": "vitest run",
     "test:unit": "vitest run src/**/*.test.ts",
     "test:e2e": "vitest run tests/e2e/**/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:db": "echo \"Run: psql $SUPABASE_DB_URL -f supabase/tests/phase2_schema_tests.sql\""
   },
   "dependencies": {
     "next": "15.3.1",

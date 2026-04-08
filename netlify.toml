@@ -20,3 +20,13 @@
   from = "/api/private/dashboard"
   to = "/.netlify/functions/api-private-dashboard"
   status = 200
+
+[[redirects]]
+  from = "/api/documents/upload"
+  to = "/.netlify/functions/api-documents-upload"
+  status = 200
+
+[[redirects]]
+  from = "/api/documents"
+  to = "/.netlify/functions/api-documents-list"
+  status = 200

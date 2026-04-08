@@ -8,6 +8,9 @@ const setValidEnv = () => {
   process.env.JWT_SECRET = 'super-secret-123';
   process.env.RATE_LIMIT_MAX_REQUESTS = '5';
   process.env.RATE_LIMIT_WINDOW_MS = '60000';
+  process.env.MAX_UPLOAD_BYTES = '10485760';
+  process.env.CHUNK_SIZE_WORDS = '220';
+  process.env.CHUNK_OVERLAP_WORDS = '40';
 };
 
 describe('GET /api/health', () => {

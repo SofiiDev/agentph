@@ -1,52 +1,44 @@
-# Regulatory Evidence Copilot — Fase 1
+# Regulatory Evidence Copilot — Fase 3 (Carga e ingesta documental)
 
-Esqueleto base seguro para SaaS regulatorio privado.
+## Alcance
+Pipeline de carga/ingesta sin embeddings ni chat.
 
-## ✅ Incluye en esta fase
-- Frontend Next.js con:
-  - Login placeholder
-  - Dashboard vacío
-- API privada en Netlify Functions bajo `/api/*`
-  - `GET /api/health`
-  - `GET /api/auth-check`
-  - `GET /api/private/dashboard`
-- Separación cliente/servidor (capa `server-only` en `src/server/*`).
-- Validación fail-fast de variables de entorno en backend.
-- Logging estructurado mínimo para auditoría técnica.
-- Diseño RLS-first en Supabase + política de ejemplo por usuario.
-- Rate limiting básico por IP.
-- Tests unitarios + smoke e2e.
+### Soporte de archivos
+- PDF
+- DOCX
+- TXT
 
-## Estructura
-```txt
-src/
-  app/
-  components/
-  lib/                 # cliente público (sin secretos)
-  server/              # server-only: env, auth, errores, logger, rate-limit
-netlify/functions/     # API privada
-supabase/
-  config.toml
-  migrations/
-tests/e2e/
-```
+## Flujo implementado
+1. Usuario autenticado sube archivo (`POST /api/documents/upload`).
+2. Archivo se almacena en bucket privado Supabase Storage.
+3. Se crea documento + versión + job de ingesta.
+4. Background Function procesa job.
+5. Parser extrae texto.
+6. Chunking con overlap configurable.
+7. Se conserva trazabilidad mínima por página (cuando aplica).
+8. Se guardan chunks ordenados.
+9. Se calcula checksum SHA-256.
+10. UI muestra estado (`uploading | processing | ready | failed`).
 
-## Variables de entorno
-Copia `.env.example` a `.env.local` (dev) y configura las mismas en Netlify para producción.
+## Endpoints
+- `GET /api/health`
+- `GET /api/auth-check`
+- `GET /api/documents`
+- `POST /api/documents/upload`
+- Background: `/.netlify/functions/api-process-document-background-background`
 
-## Scripts
-```bash
-npm install
-npm run dev
-npm run build
-npm run typecheck
-npm run test
-npm run test:unit
-npm run test:e2e
-```
+## Variables de entorno nuevas
+- `MAX_UPLOAD_BYTES`
+- `CHUNK_SIZE_WORDS`
+- `CHUNK_OVERLAP_WORDS`
+- `APP_BASE_URL` (opcional)
 
-## Seguridad
-- El frontend solo usa variables `NEXT_PUBLIC_*`.
-- `OPENAI_API_KEY` y `SUPABASE_SERVICE_ROLE_KEY` solo en servidor.
-- Endpoints protegidos requieren `Authorization: Bearer`.
-- RLS habilitado y política de ejemplo para acceso por usuario.
+## Archivos clave
+- Migración fase 3: `supabase/migrations/20260408140000_phase3_ingestion_pipeline.sql`
+- Servicio ingesta: `src/server/ingestion/service.ts`
+- Parser/chunking/validación: `src/server/ingestion/*`
+- UI upload + tabla estado: `src/components/documents/upload-panel.tsx`
+
+## Pruebas
+- Unitarias de validación mime/auth/chunking/errores parser.
+- Integración básica de handlers de upload/list.
