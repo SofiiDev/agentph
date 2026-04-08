@@ -1,58 +1,52 @@
-# Regulatory Evidence Copilot — Fase 2 (Esquema de datos)
+# Regulatory Evidence Copilot — Fase 1
 
-Implementación de base de datos multi-tenant para regulación farmacéutica privada.
+Esqueleto base seguro para SaaS regulatorio privado.
 
-## Entregables de Fase 2
-- Migración SQL completa con tablas/relaciones solicitadas.
-- Índices + restricciones de integridad.
-- Políticas RLS por organización (aislamiento tenant).
-- Seeds mínimos de prueba.
-- Helper TypeScript tipado para acceso al esquema.
-- Suite de tests SQL de criterios funcionales.
+## ✅ Incluye en esta fase
+- Frontend Next.js con:
+  - Login placeholder
+  - Dashboard vacío
+- API privada en Netlify Functions bajo `/api/*`
+  - `GET /api/health`
+  - `GET /api/auth-check`
+  - `GET /api/private/dashboard`
+- Separación cliente/servidor (capa `server-only` en `src/server/*`).
+- Validación fail-fast de variables de entorno en backend.
+- Logging estructurado mínimo para auditoría técnica.
+- Diseño RLS-first en Supabase + política de ejemplo por usuario.
+- Rate limiting básico por IP.
+- Tests unitarios + smoke e2e.
 
-## Tablas implementadas
-- `organizations`
-- `app_users` + `organization_memberships`
-- `projects`
-- `regulatory_documents`
-- `document_versions`
-- `document_chunks`
-- `document_embeddings`
-- `document_tags`
-- `document_approvals`
-- `query_logs`
-- `generation_logs`
-- `audit_logs`
-- `templates`
-- `generated_documents`
-
-## Reglas clave de negocio
-- Solo usuarios de la misma organización pueden ver/escribir datos (RLS en todas las tablas principales).
-- Visibilidad por defecto sin obsoletos mediante `v_active_document_versions`.
-- Solo una versión vigente por documento con índice único parcial en `document_versions(is_current=true)`.
-- Aprobaciones QA/RA/legal preparadas vía `document_approvals`.
-
-## Archivos relevantes
-- Migración: `supabase/migrations/20260408120000_phase2_regulatory_schema.sql`
-- Seeds: `supabase/seeds_phase2.sql`
-- Tests SQL: `supabase/tests/phase2_schema_tests.sql`
-- Helper tipado TS: `src/server/db/schema.ts`
-
-## Ejecución sugerida
-```bash
-# 1) aplicar migraciones (según tu flujo de Supabase CLI)
-supabase db reset
-
-# 2) cargar seeds
-psql "$SUPABASE_DB_URL" -f supabase/seeds_phase2.sql
-
-# 3) ejecutar tests SQL
-psql "$SUPABASE_DB_URL" -f supabase/tests/phase2_schema_tests.sql
+## Estructura
+```txt
+src/
+  app/
+  components/
+  lib/                 # cliente público (sin secretos)
+  server/              # server-only: env, auth, errores, logger, rate-limit
+netlify/functions/     # API privada
+supabase/
+  config.toml
+  migrations/
+tests/e2e/
 ```
 
-## Decisiones de diseño
-1. **RLS-first real**: todas las tablas de dominio se filtran por `organization_id` usando `same_org()`.
-2. **Modelo versionado explícito**: documento lógico (`regulatory_documents`) separado de revisiones (`document_versions`).
-3. **Escalabilidad de aprobación**: una tabla por etapas (`qa`, `ra`, `legal`) con decisión por versión.
-4. **Auditoría separada por tipo**: `query_logs`, `generation_logs` y `audit_logs` para trazabilidad fina.
-5. **Búsqueda segura por defecto**: vista activa excluye obsoletos sin depender de lógica de aplicación.
+## Variables de entorno
+Copia `.env.example` a `.env.local` (dev) y configura las mismas en Netlify para producción.
+
+## Scripts
+```bash
+npm install
+npm run dev
+npm run build
+npm run typecheck
+npm run test
+npm run test:unit
+npm run test:e2e
+```
+
+## Seguridad
+- El frontend solo usa variables `NEXT_PUBLIC_*`.
+- `OPENAI_API_KEY` y `SUPABASE_SERVICE_ROLE_KEY` solo en servidor.
+- Endpoints protegidos requieren `Authorization: Bearer`.
+- RLS habilitado y política de ejemplo para acceso por usuario.
