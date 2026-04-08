@@ -16,6 +16,12 @@
   - panel lateral de evidencia
   - indicador de confianza
 
+## LLM provider
+- `LLM_PROVIDER=anthropic|openai`
+- Si `LLM_PROVIDER=anthropic`, `/api/ask` usa Claude (Anthropic Messages API).
+- Si `LLM_PROVIDER=openai`, `/api/ask` usa OpenAI Responses API.
+- Embeddings siguen con OpenAI para pipeline de recuperación.
+
 ## Seguridad aplicada
 - Ningún secreto en frontend.
 - Llamadas LLM solo backend (`src/server/ask.ts`, `src/server/embeddings.ts`).

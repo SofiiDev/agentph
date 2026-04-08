@@ -8,6 +8,7 @@ const setEnv = () => {
   process.env.JWT_SECRET = 'super-secret-123';
   process.env.RATE_LIMIT_MAX_REQUESTS = '5';
   process.env.RATE_LIMIT_WINDOW_MS = '60000';
+  process.env.LLM_PROVIDER = 'openai';
   process.env.MAX_UPLOAD_BYTES = '100000';
   process.env.CHUNK_SIZE_WORDS = '10';
   process.env.CHUNK_OVERLAP_WORDS = '2';

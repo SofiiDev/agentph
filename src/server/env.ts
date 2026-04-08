@@ -5,6 +5,8 @@ const envSchema = z.object({
   SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   OPENAI_API_KEY: z.string().min(1),
+  ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  LLM_PROVIDER: z.enum(['openai', 'anthropic']).default('anthropic'),
   JWT_SECRET: z.string().min(10),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive(),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive(),
@@ -28,6 +30,10 @@ export const getServerEnv = (): ServerEnv => {
 
   if (parsed.data.CHUNK_OVERLAP_WORDS >= parsed.data.CHUNK_SIZE_WORDS) {
     throw new Error('Invalid server env: CHUNK_OVERLAP_WORDS must be lower than CHUNK_SIZE_WORDS');
+  }
+
+  if (parsed.data.LLM_PROVIDER === 'anthropic' && !parsed.data.ANTHROPIC_API_KEY) {
+    throw new Error('Invalid server env: ANTHROPIC_API_KEY is required when LLM_PROVIDER=anthropic');
   }
 
   cached = parsed.data;

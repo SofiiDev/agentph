@@ -36,29 +36,43 @@ const validateCitationIntegrity = (response: AssistantResponse, retrieved: Await
   }
 };
 
-const callModel = async (question: string, retrievedContext: string): Promise<AssistantResponse> => {
-  const env = getServerEnv();
+const extractJsonObject = (raw: string) => {
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) return trimmed;
 
-  const systemPrompt = [
+  const fenced = trimmed.match(/```json\s*([\s\S]*?)\s*```/i);
+  if (fenced?.[1]) return fenced[1].trim();
+
+  const first = trimmed.indexOf('{');
+  const last = trimmed.lastIndexOf('}');
+  if (first >= 0 && last > first) return trimmed.slice(first, last + 1);
+
+  return trimmed;
+};
+
+const buildSystemPrompt = () =>
+  [
     'Eres un asistente regulatorio farmacéutico privado.',
     'Reglas obligatorias:',
     '1) Solo puedes usar retrieved_context.',
     '2) No uses conocimiento externo.',
     '3) No inventes referencias ni requisitos.',
     '4) Toda afirmación debe estar soportada por al menos una cita.',
-    `5) Si no hay soporte suficiente responde exactamente: ${NO_EVIDENCE_MESSAGE}`
+    `5) Si no hay soporte suficiente responde exactamente: ${NO_EVIDENCE_MESSAGE}`,
+    '6) Devuelve solo un JSON válido, sin texto extra.'
   ].join('\n');
 
+const callOpenAI = async (question: string, retrievedContext: string, apiKey: string) => {
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
       model: 'gpt-4.1-mini',
       input: [
-        { role: 'system', content: systemPrompt },
+        { role: 'system', content: buildSystemPrompt() },
         { role: 'user', content: `question:\n${question}\n\nretrieved_context:\n${retrievedContext}` }
       ],
       text: {
@@ -73,13 +87,58 @@ const callModel = async (question: string, retrievedContext: string): Promise<As
   });
 
   if (!response.ok) {
-    throw new AppError('MODEL_ERROR', `Error llamando al modelo: ${await response.text()}`, 502);
+    throw new AppError('MODEL_ERROR', `Error llamando a OpenAI: ${await response.text()}`, 502);
   }
 
   const payload = await response.json();
-  const text = payload.output?.[0]?.content?.[0]?.text;
+  return payload.output?.[0]?.content?.[0]?.text;
+};
+
+const callAnthropic = async (question: string, retrievedContext: string, apiKey: string) => {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-sonnet-latest',
+      max_tokens: 2500,
+      temperature: 0,
+      system: buildSystemPrompt(),
+      messages: [
+        {
+          role: 'user',
+          content: `question:\n${question}\n\nretrieved_context:\n${retrievedContext}\n\nDevuelve SOLO JSON válido.`
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) {
+    throw new AppError('MODEL_ERROR', `Error llamando a Anthropic: ${await response.text()}`, 502);
+  }
+
+  const payload = await response.json();
+  const textBlock = (payload.content ?? []).find((item: { type?: string }) => item.type === 'text');
+  return textBlock?.text as string | undefined;
+};
+
+const callModel = async (question: string, retrievedContext: string): Promise<AssistantResponse> => {
+  const env = getServerEnv();
+
+  const raw =
+    env.LLM_PROVIDER === 'anthropic'
+      ? await callAnthropic(question, retrievedContext, env.ANTHROPIC_API_KEY as string)
+      : await callOpenAI(question, retrievedContext, env.OPENAI_API_KEY as string);
+
+  if (!raw) {
+    throw new AppError('INVALID_MODEL_JSON', 'El modelo no devolvió contenido', 502);
+  }
+
   try {
-    return assistantResponseSchema.parse(JSON.parse(text));
+    return assistantResponseSchema.parse(JSON.parse(extractJsonObject(raw)));
   } catch {
     throw new AppError('INVALID_MODEL_JSON', 'El modelo devolvió JSON inválido', 502);
   }
