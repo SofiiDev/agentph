@@ -1,43 +1,52 @@
-# Regulatory Evidence Copilot (SaaS privado)
+# Regulatory Evidence Copilot — Fase 1
 
-Aplicación base para asistencia regulatoria farmacéutica con arquitectura segura y multi-tenant.
+Esqueleto base seguro para SaaS regulatorio privado.
 
-## Stack
-- Next.js + TypeScript
-- Netlify Functions + Background Functions
-- Supabase (Auth, Postgres, Storage)
-- pgvector
-- OpenAI Responses API con Structured Outputs (JSON Schema estricto)
-- Zod + Vitest
+## ✅ Incluye en esta fase
+- Frontend Next.js con:
+  - Login placeholder
+  - Dashboard vacío
+- API privada en Netlify Functions bajo `/api/*`
+  - `GET /api/health`
+  - `GET /api/auth-check`
+  - `GET /api/private/dashboard`
+- Separación cliente/servidor (capa `server-only` en `src/server/*`).
+- Validación fail-fast de variables de entorno en backend.
+- Logging estructurado mínimo para auditoría técnica.
+- Diseño RLS-first en Supabase + política de ejemplo por usuario.
+- Rate limiting básico por IP.
+- Tests unitarios + smoke e2e.
 
-## Requisitos
-1. Node.js 20+
-2. Variables de entorno en servidor:
-   - `SUPABASE_URL`
-   - `SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `OPENAI_API_KEY`
+## Estructura
+```txt
+src/
+  app/
+  components/
+  lib/                 # cliente público (sin secretos)
+  server/              # server-only: env, auth, errores, logger, rate-limit
+netlify/functions/     # API privada
+supabase/
+  config.toml
+  migrations/
+tests/e2e/
+```
 
-## Desarrollo local
+## Variables de entorno
+Copia `.env.example` a `.env.local` (dev) y configura las mismas en Netlify para producción.
+
+## Scripts
 ```bash
 npm install
 npm run dev
-```
-
-## Calidad
-```bash
+npm run build
 npm run typecheck
 npm run test
+npm run test:unit
+npm run test:e2e
 ```
 
-## Deploy en Netlify
-- Configurado con `netlify.toml`.
-- Frontend con plugin oficial `@netlify/plugin-nextjs`.
-- Backend en `netlify/functions`.
-
-## Seguridad implementada (fase base)
-- El cliente nunca llama al LLM directamente.
-- Claves sensibles solo en backend por variables de entorno.
-- RLS en tablas de negocio (documentos, chunks, auditoría, membresías).
-- Trazabilidad completa por `audit_logs`.
-- Respuesta de insuficiencia de evidencia obligatoria.
+## Seguridad
+- El frontend solo usa variables `NEXT_PUBLIC_*`.
+- `OPENAI_API_KEY` y `SUPABASE_SERVICE_ROLE_KEY` solo en servidor.
+- Endpoints protegidos requieren `Authorization: Bearer`.
+- RLS habilitado y política de ejemplo para acceso por usuario.

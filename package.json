@@ -1,14 +1,14 @@
 {
   "name": "agentph-regulatory-saas",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
     "test": "vitest run",
-    "test:watch": "vitest",
+    "test:unit": "vitest run src/**/*.test.ts",
+    "test:e2e": "vitest run tests/e2e/**/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
