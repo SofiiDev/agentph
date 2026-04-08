@@ -3,8 +3,8 @@ import { withApiHandler } from '../../src/server/handler';
 import { getAuthUserFromEvent } from '../../src/server/auth';
 import { enforceRateLimit } from '../../src/server/rate-limit';
 import { jsonOk } from '../../src/server/json-response';
-import { createUpload } from '../../src/server/ingestion/service';
-import { uploadRequestSchema } from '../../src/server/api-schemas';
+import { askRegulatoryQuestion } from '../../src/server/ask';
+import { askRequestSchema } from '../../src/server/api-schemas';
 import { AppError } from '../../src/server/errors';
 
 assertEnvLoaded();
@@ -15,14 +15,20 @@ export const handler = withApiHandler(async (event, requestId) => {
   }
 
   const user = getAuthUserFromEvent(event);
-  enforceRateLimit(`upload:${event.headers?.['x-forwarded-for'] ?? user.userId}`);
+  enforceRateLimit(`ask:${event.headers?.['x-forwarded-for'] ?? user.userId}`);
 
-  const parsed = uploadRequestSchema.safeParse(JSON.parse(event.body ?? '{}'));
+  const parsed = askRequestSchema.safeParse(JSON.parse(event.body ?? '{}'));
   if (!parsed.success) {
     throw new AppError('INVALID_REQUEST', 'Payload inválido', 400, parsed.error.flatten());
   }
 
-  const upload = await createUpload(user.tenantId, user.userId, parsed.data);
+  const result = await askRegulatoryQuestion({
+    organizationId: user.tenantId,
+    userId: user.userId,
+    question: parsed.data.question,
+    topK: parsed.data.topK,
+    onlyApproved: parsed.data.onlyApproved
+  });
 
-  return jsonOk(requestId, upload, 202);
+  return jsonOk(requestId, result);
 });

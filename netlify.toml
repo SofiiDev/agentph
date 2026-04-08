@@ -30,3 +30,13 @@
   from = "/api/documents"
   to = "/.netlify/functions/api-documents-list"
   status = 200
+
+[[redirects]]
+  from = "/api/search"
+  to = "/.netlify/functions/api-search"
+  status = 200
+
+[[redirects]]
+  from = "/api/ask"
+  to = "/.netlify/functions/api-ask"
+  status = 200

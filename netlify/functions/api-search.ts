@@ -1,10 +1,10 @@
 import { assertEnvLoaded } from '../../src/server/env';
 import { withApiHandler } from '../../src/server/handler';
 import { getAuthUserFromEvent } from '../../src/server/auth';
-import { enforceRateLimit } from '../../src/server/rate-limit';
 import { jsonOk } from '../../src/server/json-response';
-import { createUpload } from '../../src/server/ingestion/service';
-import { uploadRequestSchema } from '../../src/server/api-schemas';
+import { enforceRateLimit } from '../../src/server/rate-limit';
+import { searchRelevantChunks } from '../../src/server/search';
+import { searchRequestSchema } from '../../src/server/api-schemas';
 import { AppError } from '../../src/server/errors';
 
 assertEnvLoaded();
@@ -15,14 +15,17 @@ export const handler = withApiHandler(async (event, requestId) => {
   }
 
   const user = getAuthUserFromEvent(event);
-  enforceRateLimit(`upload:${event.headers?.['x-forwarded-for'] ?? user.userId}`);
+  enforceRateLimit(`search:${event.headers?.['x-forwarded-for'] ?? user.userId}`);
 
-  const parsed = uploadRequestSchema.safeParse(JSON.parse(event.body ?? '{}'));
+  const parsed = searchRequestSchema.safeParse(JSON.parse(event.body ?? '{}'));
   if (!parsed.success) {
     throw new AppError('INVALID_REQUEST', 'Payload inválido', 400, parsed.error.flatten());
   }
 
-  const upload = await createUpload(user.tenantId, user.userId, parsed.data);
+  const results = await searchRelevantChunks(parsed.data.query, {
+    organizationId: user.tenantId,
+    ...parsed.data.filters
+  });
 
-  return jsonOk(requestId, upload, 202);
+  return jsonOk(requestId, { results });
 });

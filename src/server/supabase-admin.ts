@@ -62,6 +62,20 @@ export const getSupabaseAdminClient = () => {
       return response.json();
     },
 
+
+    async rpc(fn: string, payload: Record<string, unknown>) {
+      const response = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      return response.json();
+    },
     async uploadPrivateObject(bucket: string, path: string, bytes: Buffer, mimeType: string) {
       const response = await fetch(`${env.SUPABASE_URL}/storage/v1/object/${bucket}/${path}`, {
         method: 'POST',

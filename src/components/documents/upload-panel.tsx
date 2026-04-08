@@ -12,7 +12,7 @@ type Row = {
 };
 
 export function UploadPanel() {
-  const [token, setToken] = useState('user-1:11111111-1111-1111-1111-111111111111');
+  const [token, setToken] = useState('');
   const [items, setItems] = useState<Row[]>([]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -62,7 +62,7 @@ export function UploadPanel() {
       <h2 className="mb-3 text-lg font-semibold">Carga documental</h2>
       <p className="mb-3 text-sm text-slate-600">Tipos permitidos: PDF, DOCX, TXT.</p>
 
-      <label className="mb-2 block text-sm font-medium">Token (placeholder auth)</label>
+      <label className="mb-2 block text-sm font-medium">Token JWT</label>
       <input value={token} onChange={(e) => setToken(e.target.value)} className="mb-3 w-full rounded border p-2" />
 
       <input type="file" onChange={onFile} className="mb-3" />

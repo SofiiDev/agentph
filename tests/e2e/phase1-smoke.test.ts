@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createTestJwt } from '../../src/server/__tests__/helpers';
 
 const setValidEnv = () => {
   process.env.SUPABASE_URL = 'https://example.supabase.co';
@@ -30,7 +31,7 @@ describe('phase1 e2e smoke', () => {
       httpMethod: 'GET',
       body: null,
       path: '/api/auth-check',
-      headers: { authorization: 'Bearer user-1:tenant-1', 'x-forwarded-for': '127.0.0.1' }
+      headers: { authorization: `Bearer ${createTestJwt('user-1', 'tenant-1')}`, 'x-forwarded-for': '127.0.0.1' }
     });
     expect(authResponse.statusCode).toBe(200);
   });

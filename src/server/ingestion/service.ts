@@ -4,6 +4,7 @@ import { validateUploadInput } from './validation';
 import { buildChunks } from './chunking';
 import { parseDocumentByMime } from './parser';
 import { log } from '../logger';
+import { createEmbedding } from '../embeddings';
 import type { UploadInput } from './types';
 
 const BUCKET = 'regulatory-private-documents';
@@ -145,7 +146,22 @@ export const processIngestionJob = async (jobId: string) => {
     }));
 
     if (chunkRows.length > 0) {
-      await supabase.insert({ table: 'document_chunks', rows: chunkRows });
+      const insertedChunks = await supabase.insert({ table: 'document_chunks', rows: chunkRows });
+
+      const embeddingRows = [] as Array<{ organization_id: string; document_chunk_id: string; embedding: string; model: string }>;
+      for (const insertedChunk of insertedChunks) {
+        const vector = await createEmbedding(insertedChunk.content as string);
+        embeddingRows.push({
+          organization_id: job.organization_id,
+          document_chunk_id: insertedChunk.id,
+          embedding: `[${vector.join(',')}]`,
+          model: 'text-embedding-3-small'
+        });
+      }
+
+      if (embeddingRows.length > 0) {
+        await supabase.insert({ table: 'document_embeddings', rows: embeddingRows });
+      }
     }
 
     await supabase.patch('document_ingestion_jobs', { id: `eq.${jobId}` }, {
