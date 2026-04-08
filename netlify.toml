@@ -1,0 +1,42 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/health"
+  to = "/.netlify/functions/api-health"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth-check"
+  to = "/.netlify/functions/api-auth-check"
+  status = 200
+
+[[redirects]]
+  from = "/api/private/dashboard"
+  to = "/.netlify/functions/api-private-dashboard"
+  status = 200
+
+[[redirects]]
+  from = "/api/documents/upload"
+  to = "/.netlify/functions/api-documents-upload"
+  status = 200
+
+[[redirects]]
+  from = "/api/documents"
+  to = "/.netlify/functions/api-documents-list"
+  status = 200
+
+[[redirects]]
+  from = "/api/search"
+  to = "/.netlify/functions/api-search"
+  status = 200
+
+[[redirects]]
+  from = "/api/ask"
+  to = "/.netlify/functions/api-ask"
+  status = 200
